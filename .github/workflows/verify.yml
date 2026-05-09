@@ -1,0 +1,55 @@
+name: TLA+ Trace Validation
+
+on: [push, pull_request]
+
+jobs:
+  verify:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+
+      - uses: actions/setup-go@v5
+        with:
+          go-version-file: go.mod
+
+      - uses: actions/setup-java@v4
+        with:
+          distribution: temurin
+          java-version: 21
+
+      - name: Download TLC and Community Modules
+        run: |
+          curl -sSL -o ~/tla2tools.jar \
+            https://github.com/tlaplus/tlaplus/releases/download/v1.8.0/tla2tools.jar
+          curl -sSL -o ~/CommunityModules-deps.jar \
+            https://github.com/tlaplus/CommunityModules/releases/latest/download/CommunityModules-deps.jar
+
+      - name: Build
+        run: go build -o shutdown_demo .
+
+      - name: Generate trace (correct shutdown)
+        run: |
+          ./shutdown_demo --correct > trace.ndjson &
+          PID=$!
+          sleep 0.5
+          kill -TERM $PID
+          wait $PID 2>/dev/null || true
+          echo "--- trace ---"
+          cat trace.ndjson
+
+      - name: Validate trace with TLC
+        run: |
+          java -XX:+UseParallelGC \
+            -cp ~/tla2tools.jar:~/CommunityModules-deps.jar tlc2.TLC \
+            -config TraceValidation.cfg \
+            -deadlock \
+            -workers auto \
+            TraceValidation.tla
+
+      - name: Check spec independently
+        run: |
+          java -XX:+UseParallelGC \
+            -cp ~/tla2tools.jar:~/CommunityModules-deps.jar tlc2.TLC \
+            -config GracefulShutdown.cfg \
+            -workers auto \
+            GracefulShutdown.tla
