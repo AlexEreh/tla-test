@@ -1,0 +1,5 @@
+{"workerState":{"w1":"init","w2":"init"},"mainState":"running","signalReceived":false}
+{"workerState":{"w1":"running","w2":"init"},"mainState":"running","signalReceived":false}
+{"workerState":{"w1":"running","w2":"running"},"mainState":"running","signalReceived":false}
+{"workerState":{"w1":"running","w2":"running"},"mainState":"running","signalReceived":true}
+{"workerState":{"w1":"running","w2":"running"},"mainState":"exited","signalReceived":true}
